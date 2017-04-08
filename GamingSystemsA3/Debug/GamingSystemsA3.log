@@ -1,0 +1,11 @@
+﻿  Util.cpp
+  Reflection.cpp
+  Object.cpp
+  Main.cpp
+  Game.cpp
+c:\users\zac\school\term 4\comp 4995 - gaming\assignments\a3\gamingsystemsa3\gamingsystemsa3\game.cpp(384): warning C4244: 'initializing': conversion from 'DWORD' to 'float', possible loss of data
+  FrameTracker.cpp
+  Camera.cpp
+  Generating Code...
+  GamingSystemsA3.vcxproj -> C:\Users\Zac\SCHOOL\TERM 4\COMP 4995 - Gaming\Assignments\A3\GamingSystemsA3\Debug\GamingSystemsA3.exe
+  GamingSystemsA3.vcxproj -> C:\Users\Zac\SCHOOL\TERM 4\COMP 4995 - Gaming\Assignments\A3\GamingSystemsA3\Debug\GamingSystemsA3.pdb (Full PDB)
