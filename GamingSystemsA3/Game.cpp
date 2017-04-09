@@ -145,9 +145,51 @@ long CALLBACK Game::WndProc(HWND paramHWND, UINT uMessage, WPARAM wParam, LPARAM
 			ValidateRect(hWnd, NULL);//basically saying - yeah we took care of any paint msg without any overhead
 			return 0;
 		}
-		case WM_LBUTTONDOWN:
+		case WM_LBUTTONDOWN:  // *** PICKING ***
 		{
 			GetCursorPos(&startPos);
+
+			// compute the ray in view space given the clicked screen point
+			Ray ray = CalcPickingRay(LOWORD(lParam), HIWORD(lParam));
+
+			// transform the ray to world space
+			D3DXMATRIX view;
+			pDevice->GetTransform(D3DTS_VIEW, &view);
+
+			D3DXMATRIX viewInverse;
+			D3DXMatrixInverse(&viewInverse, 0, &view);
+
+			TransformRay(&ray, &viewInverse);
+			//selectedModel = 0;
+			wostringstream ss;
+			int i = 0;
+			for (Object obj: models) {
+				models[i]._radius = 1.0;
+				models[i]._center.x = models[i].worldMatrix._41; //x 
+				models[i]._center.y = models[i].worldMatrix._42 +1; //y
+				models[i]._center.z = models[i].worldMatrix._43; //z
+				float p41 = models[i].worldMatrix._41;
+				float p42 = models[i].worldMatrix._42;
+				float p43 = models[i].worldMatrix._43;
+				float p44 = models[i].worldMatrix._44;
+				// test for a hit
+				if (raySphereIntersectionTest(&ray, &models[i])) {
+					
+					/*if (i == 0) {
+						::MessageBox(0, TEXT("Hit Dwarf!"), TEXT("HIT"), 0);
+						ss << "HIT Dwarf obj:  " << i << endl;
+					}
+					else {
+						::MessageBox(0, TEXT("Hit Tiger!"), TEXT("HIT"), 0);
+						ss << "HIT Tiger obj:  " << i << endl;
+					}
+					ss << "test matrix obj: "  << i << "\n" << p41 << " , " << p42 << " , " << p43 << " , " << p44 << endl;
+					OutputDebugStringW(ss.str().c_str()); */
+					selectedModel = i;
+				}
+				i++;
+			}
+
 			return 0;
 		}
 		case WM_RBUTTONDOWN:
@@ -183,10 +225,25 @@ long CALLBACK Game::WndProc(HWND paramHWND, UINT uMessage, WPARAM wParam, LPARAM
 		}
 		case WM_KEYDOWN:
 			if (wParam == 0x31) {
-				selectedModel = 0;
+				/*selectedModel = 0;
+				float p41 = models[selectedModel].worldMatrix._41;
+				float p42 = models[selectedModel].worldMatrix._42;
+				float p43 = models[selectedModel].worldMatrix._43;
+				float p44 = models[selectedModel].worldMatrix._44;
+				/*wostringstream ss;
+				ss << "test matrix obj 0: \n " << p41 << " , " << p42 << " , " << p43 << " , " << p44 << endl;
+				OutputDebugStringW(ss.str().c_str()); */
+				//MessageBox(0, TEXT("Mesh Matrix:"), models[selectedModel].worldMatrix._11, 0);
 			}
 			if (wParam == 0x32) {
-				selectedModel = 1;
+				/*selectedModel = 1;
+				float p41 = models[selectedModel].worldMatrix._41;
+				float p42 = models[selectedModel].worldMatrix._42;
+				float p43 = models[selectedModel].worldMatrix._43;
+				float p44 = models[selectedModel].worldMatrix._44;
+				/*wostringstream ss;
+				ss << "test matrix obj 1: \n " << p41 << " , " << p42 << " , " << p43 << " , " << p44 << endl;
+				OutputDebugStringW(ss.str().c_str());*/
 			}
 			if (wParam == 0x33) {
 				lightsOn[0] = !lightsOn[0];
@@ -547,4 +604,64 @@ void Game::updateCam(float timeDelta) {
 		cam.roll(0.5f * timeDelta);
 	if (::GetAsyncKeyState('M') & 0x8000f)
 		cam.roll(-0.5f * timeDelta);
+}
+
+
+
+//Compute a picking ray in "View Space".
+Ray Game::CalcPickingRay(int x, int y)
+{
+	float px = 0.0f;
+	float py = 0.0f;
+	D3DVIEWPORT9 vp;
+	pDevice->GetViewport(&vp);
+	D3DXMATRIX proj;
+	pDevice->GetTransform(D3DTS_PROJECTION, &proj);
+	px = (((2.0f*x) / vp.Width) - 1.0f) / proj(0, 0);
+	py = (((-2.0f*y) / vp.Height) + 1.0f) / proj(1, 1);
+	Ray ray;
+	ray._origin = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
+	ray._direction = D3DXVECTOR3(px, py, 1.0f);
+	return ray;
+}
+
+
+
+//Transform our picking ray into "World Space" where the objects are.
+void Game::TransformRay(Ray* ray, D3DXMATRIX* T)
+{
+	// transform the ray's origin, w = 1.  Transforms points.
+	D3DXVec3TransformCoord(
+		&ray->_origin,
+		&ray->_origin,
+		T);
+	// transform the ray's direction, w = 0.  Transforms vectors.
+	D3DXVec3TransformNormal(
+		&ray->_direction,
+		&ray->_direction,
+		T);
+	// normalize the direction
+	D3DXVec3Normalize(&ray->_direction, &ray->_direction);
+}
+
+
+
+//Returns true if the ray passed in intersects the sphere passed in.  Returns false if ray misses.
+bool Game::raySphereIntersectionTest(Ray* ray, Object* sphere)
+{
+	D3DXVECTOR3 v = ray->_origin - sphere->_center;
+	float b = 2.0f * D3DXVec3Dot(&ray->_direction, &v);
+	float c = D3DXVec3Dot(&v, &v) - (sphere->_radius * sphere->_radius);
+	// find the discriminant
+	float discriminant = (b * b) - (4.0f * c);
+	// test for imaginary number
+	if (discriminant < 0.0f)
+		return false;
+	discriminant = sqrtf(discriminant);
+	float s0 = (-b + discriminant) / 2.0f;
+	float s1 = (-b - discriminant) / 2.0f;
+	// if a solution is >= 0, then we intersected the sphere
+	if (s0 >= 0.0f || s1 >= 0.0f)
+		return true;
+	return false;
 }

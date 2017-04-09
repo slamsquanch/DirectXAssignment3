@@ -153,6 +153,7 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Object.cpp" />
+    <ClCompile Include="Picking.cpp" />
     <ClCompile Include="Reflection.cpp" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
@@ -163,6 +164,7 @@
     <ClInclude Include="Headers.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="Object.h" />
+    <ClInclude Include="Picking.h" />
     <ClInclude Include="Reflection.h" />
     <ClInclude Include="Util.h" />
   </ItemGroup>

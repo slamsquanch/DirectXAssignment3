@@ -41,6 +41,9 @@ public:
 	int GameLoop();
 	void createLights();
 	void updateCam(float timeDelta);
+	Ray CalcPickingRay(int x, int y);  //Compute a picking ray in "View Space"
+	void TransformRay(Ray* ray, D3DXMATRIX* T); //Transform computed ray into "World space" / object's local space.
+	bool raySphereIntersectionTest(Ray* ray, Object* sphere);
 };
 
 #endif // !GAME_H

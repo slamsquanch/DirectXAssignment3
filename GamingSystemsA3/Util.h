@@ -5,4 +5,6 @@
 
 void SetError(TCHAR*, ...);
 
+
+
 #endif // !UTIL_H
