@@ -4,6 +4,15 @@
 #include "Headers.h"
 #include <atlbase.h>
 
+//Defines a ray.
+struct Ray
+{
+	D3DXVECTOR3 _origin;
+	D3DXVECTOR3 _direction;
+};
+
+
+
 /*
 An Object represents a model loaded from a .x file.
 */
@@ -14,7 +23,7 @@ private:
 	LPDIRECT3DTEXTURE9* pMeshTextures; // Textures for our mesh
 	DWORD dwNumMaterials;   // Number of mesh materials
 	LPDIRECT3DDEVICE9* pDevice;//graphics device
-	D3DXMATRIX worldMatrix;
+	
 	LPCWSTR filename;
 
 public:
@@ -30,6 +39,9 @@ public:
 	void rotateAboutX(float);
 	void rotateAboutY(float);
 	void rotateAboutZ(float);
+	D3DXMATRIX worldMatrix;
+	D3DXVECTOR3 _center;
+	float _radius;
 
 };
 
