@@ -18,10 +18,6 @@ An Object represents a model loaded from a .x file.
 */
 class Object {
 private:
-	LPD3DXMESH pMesh; // Our mesh object in sysmem
-	D3DMATERIAL9* pMeshMaterials; // Materials for our mesh
-	LPDIRECT3DTEXTURE9* pMeshTextures; // Textures for our mesh
-	DWORD dwNumMaterials;   // Number of mesh materials
 	LPDIRECT3DDEVICE9* pDevice;//graphics device
 	
 	LPCWSTR filename;
@@ -39,9 +35,16 @@ public:
 	void rotateAboutX(float);
 	void rotateAboutY(float);
 	void rotateAboutZ(float);
+	int x = worldMatrix._41;
+	int y = worldMatrix._42;
+	int z = worldMatrix._43;
+	DWORD dwNumMaterials;   // Number of mesh materials
 	D3DXMATRIX worldMatrix;
-	D3DXVECTOR3 _center;
-	float _radius;
+	LPD3DXMESH pMesh; // Our mesh object in sysmem
+	D3DMATERIAL9* pMeshMaterials; // Materials for our mesh
+	LPDIRECT3DTEXTURE9* pMeshTextures; // Textures for our mesh
+	D3DXVECTOR3 _center;   //Bounding sphere center for picking.
+	float _radius;   //Bounding sphere radius for picking.
 
 };
 

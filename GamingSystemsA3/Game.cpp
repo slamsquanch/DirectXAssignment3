@@ -665,3 +665,65 @@ bool Game::raySphereIntersectionTest(Ray* ray, Object* sphere)
 		return true;
 	return false;
 }
+
+
+void Game::RenderMirror()
+{
+	//PART I -Enabling the stencil buffer. Set related render states.
+	pDevice->SetRenderState(D3DRS_STENCILENABLE, true);
+	pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_ALWAYS);
+	pDevice->SetRenderState(D3DRS_STENCILREF, 0x1);
+	pDevice->SetRenderState(D3DRS_STENCILMASK, 0xffffffff);
+	pDevice->SetRenderState(D3DRS_STENCILWRITEMASK, 0xffffffff);
+	pDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_KEEP);
+	pDevice->SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP);
+	pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_REPLACE);
+
+	//PART II -Render mirror to the stencil buffer.
+	// disable writes to the depth and back buffers
+	pDevice->SetRenderState(D3DRS_ZWRITEENABLE, false);
+	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+	pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
+	pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+	// draw the mirror to the stencil buffer
+	pDevice->SetStreamSource(0, VB, 0, sizeof(Vertex));
+	pDevice->SetFVF(Vertex::FVF);
+	pDevice->SetMaterial(&MirrorMtrl);
+	pDevice->SetTexture(0, MirrorTex);
+	D3DXMATRIX I;
+	D3DXMatrixIdentity(&I);
+	pDevice->SetTransform(D3DTS_WORLD, &I);
+	pDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 18, 2);
+	// re-enable depth writes
+	pDevice->SetRenderState(D3DRS_ZWRITEENABLE, true);
+
+
+	//PART III -Render only the pixels that should appear in the mirror.
+	pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_EQUAL);
+	pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_KEEP);
+
+	//PART IV -Computes the matrix that postitions the reflection in the scene
+	// position reflection
+	D3DXMATRIX W, T, R;
+	D3DXPLANE plane(0.0f, 0.0f, 1.0f, 0.0f); // xy plane
+	D3DXMatrixReflect(&R, &plane);
+	D3DXMatrixTranslation(&T,
+		models[0].x,
+		models[0].y,
+		models[0].z);
+	W = T * R;
+
+	//PART V - clear the depth buffer to make reflection visible.
+	pDevice->Clear(0, 0, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+	//Blend reflected objects with the mirror.
+	pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
+	pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+	pDevice->SetTransform(D3DTS_WORLD, &W);
+	pDevice->SetMaterial(&*models[0].pMeshMaterials);
+	pDevice->SetTexture(0, 0);
+	pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+	models[0].pMesh->DrawSubset(0);
+	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
+	pDevice->SetRenderState(D3DRS_STENCILENABLE, false);
+	pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+} // end RenderMirror()

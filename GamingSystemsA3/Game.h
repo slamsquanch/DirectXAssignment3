@@ -44,6 +44,15 @@ public:
 	Ray CalcPickingRay(int x, int y);  //Compute a picking ray in "View Space"
 	void TransformRay(Ray* ray, D3DXMATRIX* T); //Transform computed ray into "World space" / object's local space.
 	bool raySphereIntersectionTest(Ray* ray, Object* sphere);
+	void RenderMirror(Object obj);
+	HRESULT IDirect3DDevice9::CreateVertexBuffer(
+		UINT Length,
+		DWORD Usage,
+		DWORD FVF,
+		D3DPOOL Pool
+		IDirect3DVertexBuffer9** ppVertexBuffer,
+		HANDLE* pSharedHandle
+	);
 };
 
 #endif // !GAME_H
