@@ -196,3 +196,111 @@ void Object::rotateAboutZ(float theta) {
 
 	this->translate(x, y, z);
 }
+
+
+float Object::getX() 
+{ 
+	return worldMatrix._41; 
+}
+
+
+float Object::getY() 
+{ 
+	return worldMatrix._42; 
+}
+
+
+float Object::getZ() 
+{ 
+	return worldMatrix._43; 
+}
+
+
+void Object::setX(float x)
+{
+	worldMatrix._41 = x;
+}
+
+
+void Object::setY(float y)
+{
+	worldMatrix._42 = x;
+}
+
+
+void Object::setZ(float z)
+{
+	worldMatrix._43 = x;
+}
+
+
+
+float Object::getXScale()
+{ 
+	return worldMatrix._11; 
+}
+
+
+float Object::getYScale() {
+	return worldMatrix._22; 
+}
+
+
+float Object::getZScale() { 
+	return worldMatrix._33; 
+}
+
+
+
+void Object::setXrotate(float theta) 
+{
+	xTheta = theta;
+}
+
+
+void Object::setYrotate(float theta)
+{
+	yTheta = theta;
+}
+
+
+void Object::setZrotate(float theta)
+{
+	zTheta = theta;
+}
+
+
+
+float Object::getXrotate()
+{
+	return xTheta;
+}
+
+
+float Object::getYrotate() {
+	return yTheta;
+}
+
+
+float Object::getZrotate() {
+	return zTheta;
+}
+
+
+
+void Object::setXScale(float x)
+{
+	worldMatrix._11 = x;
+}
+
+
+void Object::setYScale(float y)
+{
+	worldMatrix._22 = x;
+}
+
+
+void Object::setZScale(float z)
+{
+	worldMatrix._33 = x;
+}

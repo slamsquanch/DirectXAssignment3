@@ -1,5 +1,6 @@
 #include "Headers.h"
 
+
 /*
  Sets up and creates the directX render device that will display the game.
  
@@ -17,7 +18,7 @@
 			- It can not get the display adapter information
 			- It can not create the render device
  */
-int Game::InitDirect3DDevice(HWND hWndTarget, BOOL bWindowed, D3DFORMAT FullScreenFormat, LPDIRECT3D9 pD3D, LPDIRECT3DDEVICE9* ppDevice) {
+int Game::initDirect3DDevice(HWND hWndTarget, BOOL bWindowed, D3DFORMAT FullScreenFormat, LPDIRECT3D9 pD3D, LPDIRECT3DDEVICE9* ppDevice) {
 	D3DPRESENT_PARAMETERS d3dpp;//rendering info
 	D3DDISPLAYMODE d3ddm;//current display mode info
 	HRESULT r = 0;
@@ -32,7 +33,7 @@ int Game::InitDirect3DDevice(HWND hWndTarget, BOOL bWindowed, D3DFORMAT FullScre
 		return E_FAIL;
 	}
 
-	//bWindowed = !bWindowed;
+	bWindowed = !bWindowed;
 
 	width = d3ddm.Width;
 	height = d3ddm.Height;
@@ -46,7 +47,7 @@ int Game::InitDirect3DDevice(HWND hWndTarget, BOOL bWindowed, D3DFORMAT FullScre
 	d3dpp.hDeviceWindow = hWndTarget;
 	d3dpp.Windowed = bWindowed;
 	d3dpp.EnableAutoDepthStencil = TRUE;
-	d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
+	d3dpp.AutoDepthStencilFormat = D3DFMT_D24S8;
 	d3dpp.FullScreen_RefreshRateInHz = 0;//default refresh rate
 	d3dpp.PresentationInterval = bWindowed ? 0 : D3DPRESENT_INTERVAL_IMMEDIATE;
 	d3dpp.Flags = D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
@@ -56,6 +57,8 @@ int Game::InitDirect3DDevice(HWND hWndTarget, BOOL bWindowed, D3DFORMAT FullScre
 		SetError(TEXT("Could not create the render device"));
 		return E_FAIL;
 	}
+
+	
 
 	// Turn on the zbuffer
 	(*ppDevice)->SetRenderState(D3DRS_ZENABLE, TRUE);
@@ -83,7 +86,7 @@ Game::Game(HWND newHwnd) :hWnd(newHwnd), pD3D(0), pDevice(0), backSurface(0), bm
  
  @param newHwnd - The new hWnd value to be set.
  */
-void Game::SetHWND(HWND newHwnd) {
+void Game::setHWND(HWND newHwnd) {
 	hWnd = newHwnd;
 }
 
@@ -92,7 +95,7 @@ A getter for the hWnd field of the Game class.
 
 @return - Returns the hWnd being used by the Game object
 */
-HWND Game::GetHWND() {
+HWND Game::getHWND() {
 	return hWnd;
 }
 
@@ -108,13 +111,13 @@ HWND Game::GetHWND() {
  
  @return Returns the result of the message processing and depends on the message sent
  */
-long CALLBACK Game::StaticProc(HWND paramHWND, UINT uMessage, WPARAM wParam, LPARAM lParam) {
+long CALLBACK Game::staticProc(HWND paramHWND, UINT uMessage, WPARAM wParam, LPARAM lParam) {
 	Game* gPtr;
 
 	gPtr = (Game*)GetClassLongPtr(paramHWND, 0);
 
 	if (gPtr) {
-		return gPtr->WndProc(paramHWND, uMessage, wParam, lParam);
+		return gPtr->wndProc(paramHWND, uMessage, wParam, lParam);
 	}
 	else 
 	{
@@ -132,7 +135,7 @@ The WndProc processes messages sent to it by the OS.
 
 @return Returns the result of the message processing and depends on the message sent
 */
-long CALLBACK Game::WndProc(HWND paramHWND, UINT uMessage, WPARAM wParam, LPARAM lParam) {
+long CALLBACK Game::wndProc(HWND paramHWND, UINT uMessage, WPARAM wParam, LPARAM lParam) {
 	POINT curPos;
 
 	switch (uMessage) {
@@ -150,7 +153,7 @@ long CALLBACK Game::WndProc(HWND paramHWND, UINT uMessage, WPARAM wParam, LPARAM
 			GetCursorPos(&startPos);
 
 			// compute the ray in view space given the clicked screen point
-			Ray ray = CalcPickingRay(LOWORD(lParam), HIWORD(lParam));
+			Ray ray = calcPickingRay(LOWORD(lParam), HIWORD(lParam));
 
 			// transform the ray to world space
 			D3DXMATRIX view;
@@ -159,9 +162,9 @@ long CALLBACK Game::WndProc(HWND paramHWND, UINT uMessage, WPARAM wParam, LPARAM
 			D3DXMATRIX viewInverse;
 			D3DXMatrixInverse(&viewInverse, 0, &view);
 
-			TransformRay(&ray, &viewInverse);
+			transformRay(&ray, &viewInverse);
 			//selectedModel = 0;
-			wostringstream ss;
+			
 			int i = 0;
 			for (Object obj: models) {
 				models[i]._radius = 1.0;
@@ -212,39 +215,26 @@ long CALLBACK Game::WndProc(HWND paramHWND, UINT uMessage, WPARAM wParam, LPARAM
 			if (wParam == MK_RBUTTON) {
 				GetCursorPos(&curPos);
 				models[selectedModel].rotateAboutX(-(curPos.y - startPos.y) / 100.0f);
-				models[selectedModel].rotateAboutY(-(curPos.x - startPos.x) / 100.0f);
+				models[selectedModel].setXrotate((-(curPos.y - startPos.y) / 100.0f));  //Set x theta
+				//models[selectedModel].setXrotate(-(curPos.y - startPos.y) / 100.0f);
+				models[selectedModel].rotateAboutY(-(curPos.x - startPos.x) / 100.0f);  
+				models[selectedModel].setYrotate((-(curPos.x - startPos.x) / 100.0f));  //set Y theta.
+				//models[selectedModel].setYrotate(-(curPos.x - startPos.x) / 100.0f);
 				startPos = curPos;
 			}
-			if (wParam == MK_MBUTTON) {
+			if (wParam == MK_SHIFT) {
 				GetCursorPos(&curPos);
-				models[selectedModel].rotateAboutZ(-(curPos.x - startPos.x) / 1000.0f);
-				models[selectedModel].translate(0.0f, 0.0f, (curPos.y - startPos.y) / 200.0f);
+				models[selectedModel].rotateAboutZ(-(curPos.x - startPos.x) / 10000.0f);
+				models[selectedModel].zTheta = (-(curPos.x - startPos.x) / 10000.0f);
+				models[selectedModel].setZrotate((-(curPos.x - startPos.x) / 10000.0f));  // set z theta.
+				//models[selectedModel].setZ(-(curPos.x - startPos.x) / 1000.0f);
+				models[selectedModel].translate(0.0f, 0.0f, (curPos.y - startPos.y) / 2000.0f);
 
 			}
 			return 0;
 		}
 		case WM_KEYDOWN:
-			if (wParam == 0x31) {
-				/*selectedModel = 0;
-				float p41 = models[selectedModel].worldMatrix._41;
-				float p42 = models[selectedModel].worldMatrix._42;
-				float p43 = models[selectedModel].worldMatrix._43;
-				float p44 = models[selectedModel].worldMatrix._44;
-				/*wostringstream ss;
-				ss << "test matrix obj 0: \n " << p41 << " , " << p42 << " , " << p43 << " , " << p44 << endl;
-				OutputDebugStringW(ss.str().c_str()); */
-				//MessageBox(0, TEXT("Mesh Matrix:"), models[selectedModel].worldMatrix._11, 0);
-			}
-			if (wParam == 0x32) {
-				/*selectedModel = 1;
-				float p41 = models[selectedModel].worldMatrix._41;
-				float p42 = models[selectedModel].worldMatrix._42;
-				float p43 = models[selectedModel].worldMatrix._43;
-				float p44 = models[selectedModel].worldMatrix._44;
-				/*wostringstream ss;
-				ss << "test matrix obj 1: \n " << p41 << " , " << p42 << " , " << p43 << " , " << p44 << endl;
-				OutputDebugStringW(ss.str().c_str());*/
-			}
+
 			if (wParam == 0x33) {
 				lightsOn[0] = !lightsOn[0];
 				if (lightsOn[0])
@@ -300,7 +290,7 @@ long CALLBACK Game::WndProc(HWND paramHWND, UINT uMessage, WPARAM wParam, LPARAM
  - Getting the back buffer or creating a surface of its size fails
  - Loading the bitmap or scaling it into the stored surface fails
 */
-int Game::GameInit() {
+int Game::gameInit() {
 	HRESULT r = 0;//return values
 	D3DSURFACE_DESC desc;
 	LPDIRECT3DSURFACE9 pSurface = 0;
@@ -311,11 +301,14 @@ int Game::GameInit() {
 		return E_FAIL;
 	}
 
-	r = InitDirect3DDevice(hWnd, FALSE, D3DFMT_X8R8G8B8, pD3D, &pDevice);
+	r = initDirect3DDevice(hWnd, FALSE, D3DFMT_X8R8G8B8, pD3D, &pDevice);
 	if (FAILED(r)) {//FAILED is a macro that returns false if return value is a failure - safer than using value itself
 		SetError(TEXT("Initialization of the device failed"));
 		return E_FAIL;
 	}
+
+	setupMirror();
+	setupParticles();
 
 	D3DXCreateFont(pDevice, 50, 0, FW_NORMAL, 1, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Ariel"), &font);
 
@@ -331,7 +324,7 @@ int Game::GameInit() {
 		SetError(TEXT("Could not create bmpSurface"));
 	}
 
-	r = LoadBitmapToSurface(TEXT(BMP_PATH), &pSurface, pDevice);
+	r = loadBitmapToSurface(TEXT(BMP_PATH), &pSurface, pDevice);
 	if (FAILED(r)) {
 		SetError(TEXT("Could not load baboon.bmp"));
 	}
@@ -344,13 +337,15 @@ int Game::GameInit() {
 	frame.initTracker();
 	frame.startReset();
 
-	cam = Camera(Camera::CameraType::AIRCRAFT);
 
-	models[0] = Object(&pDevice, TEXT("Dwarf.x"));
+	cam = Camera(Camera::CameraType::AIRCRAFT);
+	
+	models[0] = Object(&pDevice, TEXT("airplane 2.x"));
 	models[0].InitGeometry();
 
 	models[1] = Object(&pDevice, TEXT("tiger.x"));
 	models[1].InitGeometry();
+
 
 	selectedModel = 0;
 
@@ -368,7 +363,7 @@ Releases the resources used by the game, first the display adapter, and then the
 
 @return - Returns an int to be used as an HRESULT in the FAILED() macro. Should never fail.
 */
-int Game::GameShutdown() {
+int Game::gameShutdown() {
 	for (int i = 0; i < 2; i++) {
 		models[i].cleanup();
 	}
@@ -390,7 +385,7 @@ and user-drawn line. After rendering it uses the present method to show the fram
 		  Fails if:
 			- A directX device has not yet been created
 */
-int Game::Render() {
+int Game::render() {
 	HRESULT r;
 	D3DLOCKED_RECT LockedRect;//locked area of display memory(buffer really) we are drawing to
 	LPDIRECT3DSURFACE9 pBackSurf = 0;
@@ -415,8 +410,10 @@ int Game::Render() {
 		return E_FAIL;
 	}
 
+	//snow->update(0.001);
+
 	//clear the display arera with colour black, ignore stencil buffer
-	pDevice->Clear(0, 0, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 25), 1.0f, 0);
+	pDevice->Clear(0, 0, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, D3DCOLOR_XRGB(0, 0, 25), 1.0f, 0);
 
 	//get pointer to backbuffer
 	r = pDevice->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &pBackSurf);
@@ -436,6 +433,16 @@ int Game::Render() {
 	}
 
 
+	//RESET BUTTON IS Q.  RESETS MODELS TO CENTER.
+	if (::GetAsyncKeyState('Q') & 0x8000f) 
+	{
+		models[0] = Object(&pDevice, TEXT("airplane 2.x"));
+		models[0].InitGeometry();
+		models[1] = Object(&pDevice, TEXT("tiger.x"));
+		models[1].InitGeometry();
+	}
+
+
 	pDevice->BeginScene();
 
 	float curTime = timeGetTime();
@@ -448,10 +455,24 @@ int Game::Render() {
 
 	cam.getViewMatrix(&camView);
 
+	D3DXMATRIX I;
+	D3DXMatrixIdentity(&I);
+	pDevice->SetTransform(D3DTS_WORLD, &I);
+
+	pDevice->SetStreamSource(0, VB, 0, sizeof(Vertex));
+	pDevice->SetFVF(Vertex::FVF);
+
+
+	//DRAW THE MIRROR
+	pDevice->SetMaterial(&MirrorMtrl);
+	pDevice->SetTexture(0, MirrorTex);
+	pDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 18, 2);
+
 	for (int i = 0; i < 2; i++) {
 		models[i].setupMatrices(camView);
 		models[i].drawObject();
 	}
+
 
 	DWORD* pData = (DWORD*)(LockedRect.pBits);
 	//DRAW CODE GOES HERE - use pData
@@ -461,8 +482,19 @@ int Game::Render() {
 		SetError(TEXT("Could not draw fps counter"));
 	}
 
-	pDevice->EndScene();
 
+	//RENDER THE MIRROR
+	renderMirror();
+	renderLeftMirror();
+	renderRightMirror();
+	renderBackMirror();
+
+	if (::GetAsyncKeyState('P') & 0x8000f)
+		snow->render();
+
+
+	pDevice->EndScene();
+	
 	pBackSurf->UnlockRect();
 	pData = 0;
 
@@ -480,7 +512,7 @@ render to update the screen.
 
 @return - Returns an int to be used as an HRESULT in the FAILED() macro.
 */
-int Game::GameLoop() {
+int Game::gameLoop() {
 	frame.incCount();
 
 	if (frame.secondPassed()) {
@@ -488,7 +520,7 @@ int Game::GameLoop() {
 		frame.startReset();
 	}
 
-	this->Render();
+	this->render();
 
 	if (GetAsyncKeyState(VK_ESCAPE))
 		PostQuitMessage(0);
@@ -510,7 +542,7 @@ its own dimensions. (i.e. not yet scaled to fit the screen)
 			- A surface could not be created based on the bitmap
 			- The surface could not hace the bitmap loaded onto it
 */
-int Game::LoadBitmapToSurface(LPCTSTR bmpPath, LPDIRECT3DSURFACE9* target, LPDIRECT3DDEVICE9 pDevice) {
+int Game::loadBitmapToSurface(LPCTSTR bmpPath, LPDIRECT3DSURFACE9* target, LPDIRECT3DDEVICE9 pDevice) {
 	HRESULT r = 0;//return results
 	HBITMAP hBitmap;//handle to bmp
 	BITMAP bitmap;//Actual bmp
@@ -593,23 +625,27 @@ void Game::updateCam(float timeDelta) {
 	if (::GetAsyncKeyState('F') & 0x8000f)
 		cam.fly(-1.0f * timeDelta);
 	if (::GetAsyncKeyState(VK_UP) & 0x8000f)
-		cam.pitch(0.5f * timeDelta);
+		cam.pitch(1.0f * timeDelta);
 	if (::GetAsyncKeyState(VK_DOWN) & 0x8000f)
-		cam.pitch(-0.5f * timeDelta);
+		cam.pitch(-1.0f * timeDelta);
 	if (::GetAsyncKeyState(VK_LEFT) & 0x8000f)
-		cam.yaw(-0.5f * timeDelta);
+		cam.yaw(-1.0f * timeDelta);
 	if (::GetAsyncKeyState(VK_RIGHT) & 0x8000f)
-		cam.yaw(0.5f * timeDelta);
+		cam.yaw(1.0f * timeDelta);
 	if (::GetAsyncKeyState('N') & 0x8000f)
 		cam.roll(0.5f * timeDelta);
 	if (::GetAsyncKeyState('M') & 0x8000f)
 		cam.roll(-0.5f * timeDelta);
+	//MAKE HER SNOW BY HOLDING P! :D
+	if (::GetAsyncKeyState('P') & 0x8000f)
+		startSnow(timeDelta);
+
 }
 
 
 
 //Compute a picking ray in "View Space".
-Ray Game::CalcPickingRay(int x, int y)
+Ray Game::calcPickingRay(int x, int y)
 {
 	float px = 0.0f;
 	float py = 0.0f;
@@ -628,7 +664,7 @@ Ray Game::CalcPickingRay(int x, int y)
 
 
 //Transform our picking ray into "World Space" where the objects are.
-void Game::TransformRay(Ray* ray, D3DXMATRIX* T)
+void Game::transformRay(Ray* ray, D3DXMATRIX* T)
 {
 	// transform the ray's origin, w = 1.  Transforms points.
 	D3DXVec3TransformCoord(
@@ -667,24 +703,29 @@ bool Game::raySphereIntersectionTest(Ray* ray, Object* sphere)
 }
 
 
-void Game::RenderMirror()
+void Game::renderMirror()
 {
+
+	if (cam.getPosition()->z > 0.0)
+		return;
+
 	//PART I -Enabling the stencil buffer. Set related render states.
 	pDevice->SetRenderState(D3DRS_STENCILENABLE, true);
 	pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_ALWAYS);
 	pDevice->SetRenderState(D3DRS_STENCILREF, 0x1);
 	pDevice->SetRenderState(D3DRS_STENCILMASK, 0xffffffff);
 	pDevice->SetRenderState(D3DRS_STENCILWRITEMASK, 0xffffffff);
-	pDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_KEEP);
+	pDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_ZERO);
 	pDevice->SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP);
 	pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_REPLACE);
 
 	//PART II -Render mirror to the stencil buffer.
 	// disable writes to the depth and back buffers
 	pDevice->SetRenderState(D3DRS_ZWRITEENABLE, false);
-	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
-	pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
-	pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+
+	pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCCOLOR);
+	pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_DESTCOLOR);
+
 	// draw the mirror to the stencil buffer
 	pDevice->SetStreamSource(0, VB, 0, sizeof(Vertex));
 	pDevice->SetFVF(Vertex::FVF);
@@ -696,34 +737,730 @@ void Game::RenderMirror()
 	pDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 18, 2);
 	// re-enable depth writes
 	pDevice->SetRenderState(D3DRS_ZWRITEENABLE, true);
+	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
 
 
 	//PART III -Render only the pixels that should appear in the mirror.
 	pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_EQUAL);
 	pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_KEEP);
 
-	//PART IV -Computes the matrix that postitions the reflection in the scene
-	// position reflection
-	D3DXMATRIX W, T, R;
-	D3DXPLANE plane(0.0f, 0.0f, 1.0f, 0.0f); // xy plane
-	D3DXMatrixReflect(&R, &plane);
-	D3DXMatrixTranslation(&T,
-		models[0].x,
-		models[0].y,
-		models[0].z);
-	W = T * R;
+	wostringstream ss;
 
-	//PART V - clear the depth buffer to make reflection visible.
-	pDevice->Clear(0, 0, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
-	//Blend reflected objects with the mirror.
-	pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
-	pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
-	pDevice->SetTransform(D3DTS_WORLD, &W);
-	pDevice->SetMaterial(&*models[0].pMeshMaterials);
-	pDevice->SetTexture(0, 0);
-	pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
-	models[0].pMesh->DrawSubset(0);
+	ss << "Airplane z:  " << (int)models[0].getZ() << endl;
+
+	if (models[0].getZ() > 2.5f)  //airplane
+	{
+		ss << "Airplane z:  " << (int)models[0].getZ() << endl;
+
+
+		//PART IV -Computes the matrix that postitions the reflection in the scene
+		// position reflection
+		D3DXMATRIX W, T, R, rotationMatrix, rotMatrixX, rotMatrixY, rotMatrixZ, scaleMatrix;
+		D3DXPLANE plane(0.0f, 0.0f, 2.5f, 0.0f); // xy plane
+		D3DXMatrixReflect(&R, &plane);
+		//for (int i = 0; i < sizeof(models) / sizeof(int); i++) {
+		D3DXMatrixTranslation(&T,
+			models[0].getX(),
+			models[0].getY(),
+			models[0].getZ()
+		);
+
+		D3DXMatrixRotationX(&rotMatrixX, models[0].xTheta);
+		D3DXMatrixRotationY(&rotMatrixY, models[0].yTheta);
+		D3DXMatrixRotationZ(&rotMatrixZ, models[0].zTheta);
+		/*D3DXMatrixRotationYawPitchRoll(&rotationMatrix,
+			models[0].getX,
+			models[0].getY,
+			models[0].getZ
+		)*/
+
+		W = rotMatrixX  *rotMatrixY * rotMatrixZ * T * R;
+		//W = rotationMatrix * T * R;
+
+		//PART V - clear the depth buffer to make reflection visible.
+		pDevice->Clear(0, 0, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+		//Blend reflected objects with the mirror.
+		pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
+		pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+
+		//Draw the reflected image.
+		pDevice->SetTransform(D3DTS_WORLD, &W);
+		for (DWORD i = 0; i < models[0].dwNumMaterials; i++)
+		{
+			pDevice->SetMaterial(&models[0].pMeshMaterials[i]);
+			pDevice->SetTexture(0, models[0].pMeshTextures[i]);
+
+			pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+			models[0].pMesh->DrawSubset(i);
+		}
+		//pDevice->SetMaterial(&mirrorReflectMtrl);
+
+	}
+
+
+	ss << "Tiger z:  " << (int)models[1].getZ() << endl;
+
+	if (models[1].getZ() > 2.5f)  //tiger
+	{
+		ss << "Tiger z:  " << (int)models[1].getZ() << endl;
+		//PART IV -Computes the matrix that postitions the reflection in the scene
+		// position reflection
+		D3DXMATRIX W, T, R, rotationMatrix, rotMatrixX, rotMatrixY, rotMatrixZ, scaleMatrix;
+		D3DXPLANE plane(0.0f, 0.0f, 2.5f, 0.0f); // xy plane
+		D3DXMatrixReflect(&R, &plane);
+		//mirrorReflectMtrl = models[1].pMeshMaterials;
+		//for (int i = 0; i < sizeof(models) / sizeof(int); i++) {
+		D3DXMatrixTranslation(&T,
+			models[1].getX(),
+			models[1].getY(),
+			models[1].getZ()
+		);
+
+		/*D3DXMatrixRotationYawPitchRoll(&rotationMatrix,
+			models[1].getX(),
+			models[1].getY(),
+			models[1].getZ()
+		); */
+
+
+		D3DXMatrixRotationX(&rotMatrixX, models[1].xTheta);
+		D3DXMatrixRotationY(&rotMatrixY, models[1].yTheta);
+		D3DXMatrixRotationZ(&rotMatrixZ, models[1].zTheta);
+
+		W = rotMatrixX  *rotMatrixY * rotMatrixZ * T * R;
+		//W = rotationMatrix * T * R;
+
+		//PART V - clear the depth buffer to make reflection visible.
+		pDevice->Clear(0, 0, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+		//Blend reflected objects with the mirror.
+		pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
+		pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+
+		//Draw the reflected image.
+		pDevice->SetTransform(D3DTS_WORLD, &W);
+		for (DWORD i = 0; i < models[1].dwNumMaterials; i++)
+		{
+			pDevice->SetMaterial(&models[1].pMeshMaterials[i]);
+			pDevice->SetTexture(0, models[1].pMeshTextures[i]);
+			pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+			models[1].pMesh->DrawSubset(i);
+		}
+	}
+
+	/*else {
+		//PART IV -Computes the matrix that postitions the reflection in the scene
+	    // position reflection
+		D3DXMATRIX W, T, R, rotationMatrix;
+		D3DXPLANE plane(0.0f, 0.0f, 1.0f, 0.0f); // xy plane
+		//D3DXMatrixReflect(&R, &plane);
+		//for (int i = 0; i < sizeof(models) / sizeof(int); i++) {
+		D3DXMatrixTranslation(&T,
+			models[1].getX(),
+			models[1].getY(),
+			models[1].getZ()
+		);
+
+		//D3DXMatrixRotationY(&rotationMatrix, models[1].getYrotate());
+
+		/*D3DXMatrixRotationYawPitchRoll(&rotationMatrix,
+			models[1].getX(),
+			models[1].getY(),
+			models[1].getZ()
+		);
+
+		W = T * R;
+
+		//PART V - clear the depth buffer to make reflection visible.
+		pDevice->Clear(0, 0, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+		//Blend reflected objects with the mirror.
+		pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
+		pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+
+		//Draw the reflected image.
+		pDevice->SetTransform(D3DTS_WORLD, &W);
+		for (DWORD i = 0; i < models[1].dwNumMaterials; i++)
+		{
+			pDevice->SetMaterial(&models[1].pMeshMaterials[i]);
+			pDevice->SetTexture(0, models[1].pMeshTextures[i]);
+			pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+			models[1].pMesh->DrawSubset(i);
+		}
+
+	} */
+
+
+	// RESTORE RENDER STATES.
 	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
 	pDevice->SetRenderState(D3DRS_STENCILENABLE, false);
 	pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
-} // end RenderMirror()
+} // end RenderMirror() 
+
+
+
+void Game::renderLeftMirror()
+{
+	if (cam.getPosition()->z > 2.5)
+		return;
+
+	//PART I -Enabling the stencil buffer. Set related render states.
+	pDevice->SetRenderState(D3DRS_STENCILENABLE, true);
+	pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_ALWAYS);
+	pDevice->SetRenderState(D3DRS_STENCILREF, 0x1);
+	pDevice->SetRenderState(D3DRS_STENCILMASK, 0xffffffff);
+	pDevice->SetRenderState(D3DRS_STENCILWRITEMASK, 0xffffffff);
+	pDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_ZERO);
+	pDevice->SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP);
+	pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_REPLACE);
+
+	//PART II -Render mirror to the stencil buffer.
+	// disable writes to the depth and back buffers
+	pDevice->SetRenderState(D3DRS_ZWRITEENABLE, false);
+
+	pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCCOLOR);
+	pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_DESTCOLOR);
+
+	// draw the mirror to the stencil buffer
+	pDevice->SetStreamSource(0, VB, 0, sizeof(Vertex));
+	pDevice->SetFVF(Vertex::FVF);
+	pDevice->SetMaterial(&MirrorMtrl);
+	pDevice->SetTexture(0, MirrorTex);
+	D3DXMATRIX I;
+	D3DXMatrixIdentity(&I);
+	pDevice->SetTransform(D3DTS_WORLD, &I);
+	pDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 18, 2);
+	// re-enable depth writes
+	pDevice->SetRenderState(D3DRS_ZWRITEENABLE, true);
+	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+
+
+	//PART III -Render only the pixels that should appear in the mirror.
+	pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_EQUAL);
+	pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_KEEP);
+
+	wostringstream ss;
+
+	ss << "Airplane z:  " << (int)models[0].getZ() << endl;
+
+	if (models[0].getX() > -2.5f)  //airplane
+	{
+		ss << "Airplane z:  " << (int)models[0].getZ() << endl;
+
+
+		//PART IV -Computes the matrix that postitions the reflection in the scene
+		// position reflection
+		D3DXMATRIX W, T, R, rotationMatrix, rotMatrixX, rotMatrixY, rotMatrixZ, scaleMatrix;
+		D3DXPLANE plane(0.0f, 0.0f, 2.5f, 0.0f); // xy plane
+		D3DXMatrixReflect(&R, &plane);
+		//for (int i = 0; i < sizeof(models) / sizeof(int); i++) {
+		D3DXMatrixTranslation(&T,
+			models[0].getX(),
+			models[0].getY(),
+			models[0].getZ()
+		);
+
+		D3DXMatrixRotationX(&rotMatrixX, models[0].xTheta);
+		D3DXMatrixRotationY(&rotMatrixY, models[0].yTheta);
+		D3DXMatrixRotationZ(&rotMatrixZ, models[0].zTheta);
+
+		/*D3DXMatrixRotationYawPitchRoll(&rotationMatrix,
+			models[0].getX,
+			models[0].getY,
+			models[0].getZ
+		);*/
+
+		W = rotMatrixX  *rotMatrixY * rotMatrixZ * T * R;
+		//W = rotationMatrix * T * R;
+
+		//PART V - clear the depth buffer to make reflection visible.
+		pDevice->Clear(0, 0, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+		//Blend reflected objects with the mirror.
+		pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
+		pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+
+		//Draw the reflected image.
+		pDevice->SetTransform(D3DTS_WORLD, &W);
+		for (DWORD i = 0; i < models[0].dwNumMaterials; i++)
+		{
+			pDevice->SetMaterial(&models[0].pMeshMaterials[i]);
+			pDevice->SetTexture(0, models[0].pMeshTextures[i]);
+
+			pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+			models[0].pMesh->DrawSubset(i);
+		}
+		//pDevice->SetMaterial(&mirrorReflectMtrl);
+
+	}
+
+
+	ss << "Tiger z:  " << (int)models[1].getZ() << endl;
+
+	if (models[1].getX() > -2.5f)  //tiger
+	{
+		ss << "Tiger z:  " << (int)models[1].getZ() << endl;
+		//PART IV -Computes the matrix that postitions the reflection in the scene
+		// position reflection
+		D3DXMATRIX W, T, R, rotationMatrix, rotMatrixX, rotMatrixY, rotMatrixZ, scaleMatrix;
+		D3DXPLANE plane(0.0f, 0.0f, 1.0f, 0.0f); // xy plane
+		D3DXMatrixReflect(&R, &plane);
+		//mirrorReflectMtrl = models[1].pMeshMaterials;
+		//for (int i = 0; i < sizeof(models) / sizeof(int); i++) {
+		D3DXMatrixTranslation(&T,
+			models[1].getX(),
+			models[1].getY(),
+			models[1].getZ()
+		);
+
+		/*D3DXMatrixRotationYawPitchRoll(&rotationMatrix,
+			models[1].getX(),
+			models[1].getY(),
+			models[1].getZ()
+		);*/
+
+
+		D3DXMatrixRotationX(&rotMatrixX, models[1].xTheta);
+		D3DXMatrixRotationY(&rotMatrixY, models[1].yTheta);
+		D3DXMatrixRotationZ(&rotMatrixZ, models[1].zTheta);
+
+		W = rotMatrixX  *rotMatrixY * rotMatrixZ * T * R;
+		//W = rotationMatrix * T * R;
+
+		//PART V - clear the depth buffer to make reflection visible.
+		pDevice->Clear(0, 0, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+		//Blend reflected objects with the mirror.
+		pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
+		pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+
+		//Draw the reflected image.
+		pDevice->SetTransform(D3DTS_WORLD, &W);
+		for (DWORD i = 0; i < models[1].dwNumMaterials; i++)
+		{
+			pDevice->SetMaterial(&models[1].pMeshMaterials[i]);
+			pDevice->SetTexture(0, models[1].pMeshTextures[i]);
+			pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+			models[1].pMesh->DrawSubset(i);
+		}
+	}
+
+
+	// RESTORE RENDER STATES.
+	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
+	pDevice->SetRenderState(D3DRS_STENCILENABLE, false);
+	pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+}  // end RenderLeftMirror() 
+
+
+
+
+
+
+
+void Game::renderRightMirror()
+{
+
+	if (cam.getPosition()->x < 2.5)
+		return;
+
+	//PART I -Enabling the stencil buffer. Set related render states.
+	pDevice->SetRenderState(D3DRS_STENCILENABLE, true);
+	pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_ALWAYS);
+	pDevice->SetRenderState(D3DRS_STENCILREF, 0x1);
+	pDevice->SetRenderState(D3DRS_STENCILMASK, 0xffffffff);
+	pDevice->SetRenderState(D3DRS_STENCILWRITEMASK, 0xffffffff);
+	pDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_ZERO);
+	pDevice->SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP);
+	pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_REPLACE);
+
+	//PART II -Render mirror to the stencil buffer.
+	// disable writes to the depth and back buffers
+	pDevice->SetRenderState(D3DRS_ZWRITEENABLE, false);
+
+	pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCCOLOR);
+	pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_DESTCOLOR);
+
+	// draw the mirror to the stencil buffer
+	pDevice->SetStreamSource(0, VB, 0, sizeof(Vertex));
+	pDevice->SetFVF(Vertex::FVF);
+	pDevice->SetMaterial(&MirrorMtrl);
+	pDevice->SetTexture(0, MirrorTex);
+	D3DXMATRIX I;
+	D3DXMatrixIdentity(&I);
+	pDevice->SetTransform(D3DTS_WORLD, &I);
+	pDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 6, 2);
+	// re-enable depth writes
+	pDevice->SetRenderState(D3DRS_ZWRITEENABLE, true);
+	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+
+
+	//PART III -Render only the pixels that should appear in the mirror.
+	pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_EQUAL);
+	pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_KEEP);
+
+	wostringstream ss;
+
+	ss << "Airplane z:  " << (int)models[0].getZ() << endl;
+
+	if (models[0].getX() < 2.5f)  //airplane
+	{
+		ss << "Airplane z:  " << (int)models[0].getZ() << endl;
+
+
+		//PART IV -Computes the matrix that postitions the reflection in the scene
+		// position reflection
+		D3DXMATRIX W, T, R, rotationMatrix, rotMatrixX, rotMatrixY, rotMatrixZ, scaleMatrix;
+		D3DXPLANE plane(2.5f, 0.0f, 0.0f, 0.0f); // xy plane
+		D3DXMatrixReflect(&R, &plane);
+		//for (int i = 0; i < sizeof(models) / sizeof(int); i++) {
+		D3DXMatrixTranslation(&T,
+			models[0].getX(),
+			models[0].getY(),
+			models[0].getZ()
+		);
+
+		D3DXMatrixRotationX(&rotMatrixX, models[0].xTheta);
+		D3DXMatrixRotationY(&rotMatrixY, models[0].yTheta);
+		D3DXMatrixRotationZ(&rotMatrixZ, models[0].zTheta);
+		
+		/*D3DXMatrixRotationYawPitchRoll(&rotationMatrix,
+			models[0].getX,
+			models[0].getY,
+			models[0].getZ
+		);*/
+
+		W = rotMatrixX  *rotMatrixY * rotMatrixZ * T * R;
+		//W = rotationMatrix * T * R;
+
+		//PART V - clear the depth buffer to make reflection visible.
+		pDevice->Clear(0, 0, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+		//Blend reflected objects with the mirror.
+		pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
+		pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+
+		//Draw the reflected image.
+		pDevice->SetTransform(D3DTS_WORLD, &W);
+		for (DWORD i = 0; i < models[0].dwNumMaterials; i++)
+		{
+			pDevice->SetMaterial(&models[0].pMeshMaterials[i]);
+			pDevice->SetTexture(0, models[0].pMeshTextures[i]);
+
+			pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+			models[0].pMesh->DrawSubset(i);
+		}
+		//pDevice->SetMaterial(&mirrorReflectMtrl);
+
+	}
+
+
+	ss << "Tiger z:  " << (int)models[1].getZ() << endl;
+
+	if (models[1].getX() < 2.5f)  //tiger
+	{
+		ss << "Tiger z:  " << (int)models[1].getZ() << endl;
+		//PART IV -Computes the matrix that postitions the reflection in the scene
+		// position reflection
+		D3DXMATRIX W, T, R, rotationMatrix, rotMatrixX, rotMatrixY, rotMatrixZ, scaleMatrix;
+		D3DXPLANE plane(2.5f, 0.0f, 0.0f, 0.0f); // xy plane
+		D3DXMatrixReflect(&R, &plane);
+		//mirrorReflectMtrl = models[1].pMeshMaterials;
+		//for (int i = 0; i < sizeof(models) / sizeof(int); i++) {
+		D3DXMatrixTranslation(&T,
+			models[1].getX(),
+			models[1].getY(),
+			models[1].getZ()
+		);
+
+		/*D3DXMatrixRotationYawPitchRoll(&rotationMatrix,
+			models[1].getX(),
+			models[1].getY(),
+			models[1].getZ()
+		);*/
+
+
+		D3DXMatrixRotationX(&rotMatrixX, models[1].xTheta);
+		D3DXMatrixRotationY(&rotMatrixY, models[1].yTheta);
+		D3DXMatrixRotationZ(&rotMatrixZ, models[1].zTheta);
+
+		W = rotMatrixX  *rotMatrixY * rotMatrixZ * T * R;
+		//W = rotationMatrix * T * R;
+
+		//PART V - clear the depth buffer to make reflection visible.
+		pDevice->Clear(0, 0, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+		//Blend reflected objects with the mirror.
+		pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
+		pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+
+		//Draw the reflected image.
+		pDevice->SetTransform(D3DTS_WORLD, &W);
+		for (DWORD i = 0; i < models[1].dwNumMaterials; i++)
+		{
+			pDevice->SetMaterial(&models[1].pMeshMaterials[i]);
+			pDevice->SetTexture(0, models[1].pMeshTextures[i]);
+			pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+			models[1].pMesh->DrawSubset(i);
+		}
+	}
+
+
+	// RESTORE RENDER STATES.
+	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
+	pDevice->SetRenderState(D3DRS_STENCILENABLE, false);
+	pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+
+}  // end RenderRightMirror() 
+
+
+
+
+
+
+
+void Game::renderBackMirror()
+{
+
+	if (cam.getPosition()->z > 0)
+		return;
+
+	//PART I -Enabling the stencil buffer. Set related render states.
+	pDevice->SetRenderState(D3DRS_STENCILENABLE, true);
+	pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_ALWAYS);
+	pDevice->SetRenderState(D3DRS_STENCILREF, 0x1);
+	pDevice->SetRenderState(D3DRS_STENCILMASK, 0xffffffff);
+	pDevice->SetRenderState(D3DRS_STENCILWRITEMASK, 0xffffffff);
+	pDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_ZERO);
+	pDevice->SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP);
+	pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_REPLACE);
+
+	//PART II -Render mirror to the stencil buffer.
+	// disable writes to the depth and back buffers
+	pDevice->SetRenderState(D3DRS_ZWRITEENABLE, false);
+
+	pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCCOLOR);
+	pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_DESTCOLOR);
+
+	// draw the mirror to the stencil buffer
+	pDevice->SetStreamSource(0, VB, 0, sizeof(Vertex));
+	pDevice->SetFVF(Vertex::FVF);
+	pDevice->SetMaterial(&MirrorMtrl);
+	pDevice->SetTexture(0, MirrorTex);
+	D3DXMATRIX I;
+	D3DXMatrixIdentity(&I);
+	pDevice->SetTransform(D3DTS_WORLD, &I);
+	pDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, 2);
+	// re-enable depth writes
+	pDevice->SetRenderState(D3DRS_ZWRITEENABLE, true);
+	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+
+
+	//PART III -Render only the pixels that should appear in the mirror.
+	pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_EQUAL);
+	pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_KEEP);
+
+	wostringstream ss;
+
+	ss << "Airplane z:  " << (int)models[0].getZ() << endl;
+
+	if (models[0].getZ() < 2.5f)  //airplane
+	{
+		ss << "Airplane z:  " << (int)models[0].getZ() << endl;
+
+
+		//PART IV -Computes the matrix that postitions the reflection in the scene
+		// position reflection
+		D3DXMATRIX W, T, R, rotationMatrix, rotMatrixX, rotMatrixY, rotMatrixZ, scaleMatrix;
+		D3DXPLANE plane(0.0f, 0.0f, -2.5f, 0.0f); // xy plane
+		D3DXMatrixReflect(&R, &plane);
+		//for (int i = 0; i < sizeof(models) / sizeof(int); i++) {
+		D3DXMatrixTranslation(&T,
+			models[0].getX(),
+			models[0].getY(),
+			models[0].getZ()
+		);
+
+		D3DXMatrixRotationX(&rotMatrixX, models[0].xTheta);
+		D3DXMatrixRotationY(&rotMatrixY, models[0].yTheta);
+		D3DXMatrixRotationZ(&rotMatrixZ, models[0].zTheta);
+
+		/*D3DXMatrixRotationYawPitchRoll(&rotationMatrix,
+			models[0].getX,
+			models[0].getY,
+			models[0].getZ
+		);*/
+
+		W = rotMatrixX  *rotMatrixY * rotMatrixZ * T * R;
+		//W = rotationMatrix * T * R;
+
+		//PART V - clear the depth buffer to make reflection visible.
+		pDevice->Clear(0, 0, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+		//Blend reflected objects with the mirror.
+		pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
+		pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+
+		//Draw the reflected image.
+		pDevice->SetTransform(D3DTS_WORLD, &W);
+		for (DWORD i = 0; i < models[0].dwNumMaterials; i++)
+		{
+			pDevice->SetMaterial(&models[0].pMeshMaterials[i]);
+			pDevice->SetTexture(0, models[0].pMeshTextures[i]);
+
+			pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+			models[0].pMesh->DrawSubset(i);
+		}
+		//pDevice->SetMaterial(&mirrorReflectMtrl);
+
+	}
+
+
+	ss << "Tiger z:  " << (int)models[1].getZ() << endl;
+
+	if (models[1].getZ() < -2.5f)  //tiger
+	{
+		ss << "Tiger z:  " << (int)models[1].getZ() << endl;
+		//PART IV -Computes the matrix that postitions the reflection in the scene
+		// position reflection
+		D3DXMATRIX W, T, R, rotationMatrix, rotMatrixX, rotMatrixY, rotMatrixZ, scaleMatrix;
+		D3DXPLANE plane(0.0f, 0.0f, -1.0f, 0.0f); // xy plane
+		D3DXMatrixReflect(&R, &plane);
+		//mirrorReflectMtrl = models[1].pMeshMaterials;
+		//for (int i = 0; i < sizeof(models) / sizeof(int); i++) {
+		D3DXMatrixTranslation(&T,
+			models[1].getX(),
+			models[1].getY(),
+			models[1].getZ()
+		);
+
+		/*D3DXMatrixRotationYawPitchRoll(&rotationMatrix,
+			models[1].getX(),
+			models[1].getY(),
+			models[1].getZ()
+		); */
+
+
+		D3DXMatrixRotationX(&rotMatrixX, models[1].xTheta);
+		D3DXMatrixRotationY(&rotMatrixY, models[1].yTheta);
+		D3DXMatrixRotationZ(&rotMatrixZ, models[1].zTheta);
+
+		W = rotMatrixX  *rotMatrixY * rotMatrixZ * T * R;
+		//W = rotationMatrix * T * R;
+
+		//PART V - clear the depth buffer to make reflection visible.
+		pDevice->Clear(0, 0, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+		//Blend reflected objects with the mirror.
+		pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
+		pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+
+		//Draw the reflected image.
+		pDevice->SetTransform(D3DTS_WORLD, &W);
+		for (DWORD i = 0; i < models[1].dwNumMaterials; i++)
+		{
+			pDevice->SetMaterial(&models[1].pMeshMaterials[i]);
+			pDevice->SetTexture(0, models[1].pMeshTextures[i]);
+			pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+			models[1].pMesh->DrawSubset(i);
+		}
+	}
+
+
+	// RESTORE RENDER STATES.
+	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
+	pDevice->SetRenderState(D3DRS_STENCILENABLE, false);
+	pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+
+}  // end RenderBackMirror() 
+
+
+
+
+
+//Make the game mirror.
+void Game::setupMirror() {
+	pDevice->CreateVertexBuffer(
+		24 * sizeof(Vertex),
+		0, // usage
+		Vertex::FVF,
+		D3DPOOL_MANAGED,
+		&VB,
+		0);
+
+	Vertex* v = 0;
+
+	VB->Lock(0, 0, (void**)&v, 0);
+
+
+	// mirror back face
+	v[5] = Vertex(-2.5f, 0.0f, -2.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+	v[4] = Vertex(-2.5f, 5.0f, -2.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+	v[3] = Vertex(2.5f, 5.0f, -2.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
+
+	v[2] = Vertex(-2.5f, 0.0f, -2.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+	v[1] = Vertex(2.5f, 5.0f, -2.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
+	v[0] = Vertex(2.5f, 0.0f, -2.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
+
+	// mirror right face
+	v[11] = Vertex(2.5f, 5.0f, -2.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	v[10] = Vertex(2.5f, 5.0f, 2.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	v[9] = Vertex(2.5f, 0.0f, 2.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+
+	v[8] = Vertex(2.5f, 0.0f, 2.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	v[7] = Vertex(2.5f, 0.0f, -2.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	v[6] = Vertex(2.5f, 5.0f, -2.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+
+	// mirror left face
+	v[12] = Vertex(-2.5f, 5.0f, 2.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	v[13] = Vertex(-2.5f, 5.0f, -2.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	v[14] = Vertex(-2.5f, 0.0f, -2.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+
+	v[15] = Vertex(-2.5f, 0.0f, 2.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	v[16] = Vertex(-2.5f, 0.0f, -2.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	v[17] = Vertex(-2.5f, 5.0f, -2.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+
+	
+	// mirror front face 
+	v[18] = Vertex(-2.5f, 0.0f, 2.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f);
+	v[19] = Vertex(-2.5f, 5.0f, 2.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
+	v[20] = Vertex(2.5f, 5.0f, 2.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f);
+
+	v[21] = Vertex(-2.5f, 0.0f, 2.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f);
+	v[22] = Vertex(2.5f, 5.0f, 2.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f);
+	v[23] = Vertex(2.5f, 0.0f, 2.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f);
+
+	VB->Unlock();
+
+	D3DXCreateTextureFromFile(pDevice, TEXT("ice.bmp"), &MirrorTex);
+
+	pDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+	pDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+	pDevice->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+}
+
+
+
+
+
+D3DMATERIAL9 Game::initMtrl(D3DXCOLOR a, D3DXCOLOR d, D3DXCOLOR s, D3DXCOLOR e, float p)
+{
+	D3DMATERIAL9 mtrl;
+	mtrl.Ambient = a;
+	mtrl.Diffuse = d;
+	mtrl.Specular = s;
+	mtrl.Emissive = e;
+	mtrl.Power = p;
+	return mtrl;
+}
+
+
+void Game::startSnow(float timeDelta) {
+	snow->update(timeDelta);
+}
+
+
+
+void Game::setupParticles()
+{
+	srand((unsigned int)123);
+
+	ParticleSystem::BoundingBox boundingBox;
+	boundingBox._min = D3DXVECTOR3(-10.0f, -10.0f, -10.0f);
+	boundingBox._max = D3DXVECTOR3(10.0f, 10.0f, 10.0f);
+
+	snow = new Snow(&boundingBox, 5000);
+	snow->init(pDevice, "snowflake.dds");
+}

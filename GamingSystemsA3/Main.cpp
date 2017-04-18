@@ -17,7 +17,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pstrCmdLin
 	HWND hWnd;
 	MSG msg;
 	WNDCLASSEX wc;
-	Game newGame;
 
 	static TCHAR strAppName[] = TEXT("First Windows App, Zen Style");
 
@@ -25,7 +24,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pstrCmdLin
 	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 	wc.cbClsExtra = sizeof(Game*);
 	wc.cbWndExtra = 0;
-	wc.lpfnWndProc = Game::StaticProc;
+	wc.lpfnWndProc = Game::staticProc;
 	wc.hInstance = hInstance;
 	wc.hbrBackground = (HBRUSH)GetStockObject(DKGRAY_BRUSH);
 	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
@@ -48,16 +47,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pstrCmdLin
 		hInstance,
 		NULL);
 
-	newGame = Game(hWnd);
+	Game newGame(hWnd);
 
 	SetClassLongPtr(hWnd, 0, (LONG)&newGame);
 
 	ShowWindow(hWnd, iCmdShow);
 	UpdateWindow(hWnd);
 
-	if (FAILED(newGame.GameInit())) {
+	if (FAILED(newGame.gameInit())) {
 		SetError(TEXT("Initialization Failed"));
-		newGame.GameShutdown();
+		newGame.gameShutdown();
 		return E_FAIL;
 	}
 
@@ -70,9 +69,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pstrCmdLin
 			DispatchMessage(&msg);
 		}
 		else {
-			newGame.GameLoop();
+			newGame.gameLoop();
 		}
 	}
-	newGame.GameShutdown();// clean up the game
+	newGame.gameShutdown();// clean up the game
 	return msg.wParam;
 }

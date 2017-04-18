@@ -109,3 +109,55 @@ void Camera::fly(float units)
 	if (_cameraType == AIRCRAFT)
 		_pos += _up * units;
 }
+
+void Camera::setCameraType(CameraType cameraType)
+{
+	_cameraType = cameraType;
+}
+
+
+
+D3DXVECTOR3* Camera::getPosition()
+{
+	return &_pos;
+}
+
+void Camera::setPosition(D3DXVECTOR3* pos)
+{
+	_pos = *pos;
+}
+
+void Camera::getRight(D3DXVECTOR3* right)
+{
+	*right = _right;
+}
+
+void Camera::getUp(D3DXVECTOR3* up)
+{
+	*up = _up;
+}
+
+
+D3DXVECTOR3* Camera::getLook()
+{
+	return &_look;
+}
+
+
+D3DXMATRIX* Camera::GetViewMatrix()
+{ 
+	return &_view; 
+}
+
+
+D3DXMATRIX* Camera::GetProjectionMatrix()
+{ 
+	return &_projection; 
+}
+
+
+
+D3DXVECTOR3* Camera::GetPosition()
+{
+	return &_pos; 
+}

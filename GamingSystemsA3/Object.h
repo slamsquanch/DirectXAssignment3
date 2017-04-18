@@ -18,8 +18,6 @@ An Object represents a model loaded from a .x file.
 */
 class Object {
 private:
-	LPDIRECT3DDEVICE9* pDevice;//graphics device
-	
 	LPCWSTR filename;
 
 public:
@@ -32,12 +30,30 @@ public:
 	void setupMatrices(D3DXMATRIX matView);
 	void drawObject();
 	void translate(float, float, float);
+	float x;
+	float y;
+	float z;
 	void rotateAboutX(float);
 	void rotateAboutY(float);
 	void rotateAboutZ(float);
-	int x = worldMatrix._41;
-	int y = worldMatrix._42;
-	int z = worldMatrix._43;
+	float getX();
+	float getY();
+	float getZ();
+	void setX(float x);
+	void setY(float y);
+	void setZ(float z);
+	float getXrotate();
+	float getYrotate();
+	float getZrotate();
+	void setXrotate(float theta);
+	void setYrotate(float theta);
+	void setZrotate(float theta);
+	void setXScale(float x);
+	void setYScale(float y);
+	void setZScale(float z);
+	float getXScale();
+	float getYScale();
+	float getZScale();
 	DWORD dwNumMaterials;   // Number of mesh materials
 	D3DXMATRIX worldMatrix;
 	LPD3DXMESH pMesh; // Our mesh object in sysmem
@@ -45,6 +61,10 @@ public:
 	LPDIRECT3DTEXTURE9* pMeshTextures; // Textures for our mesh
 	D3DXVECTOR3 _center;   //Bounding sphere center for picking.
 	float _radius;   //Bounding sphere radius for picking.
+	LPDIRECT3DDEVICE9* pDevice;//graphics device
+	float xTheta = 0;
+	float yTheta = 0;
+	float zTheta = 0;
 
 };
 
